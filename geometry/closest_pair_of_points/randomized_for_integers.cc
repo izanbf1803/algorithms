@@ -18,10 +18,10 @@ using ld = long double;
 using pt = Point<ll>;
 
 
-struct CustomHash {
-	size_t operator()(const pair<ll,ll>& p) const {
+struct CustomHashPoint {
+	size_t operator()(const pt& p) const {
 		static const uint64_t C = chrono::steady_clock::now().time_since_epoch().count();
-		return C ^ ((p.first << 32) ^ p.second);
+		return C ^ ((p.x << 32) ^ p.y);
 	}
 };
 
@@ -60,23 +60,34 @@ pair<pt,pt> closest_pair_of_points_naive(vector<pt> P) {
 
 
 // O(n)
-pair<pt,pt> closest_pair_of_points_rand_ints(vector<pt> P) {
-	int n = int(P.size());
-	assert(n >= 2);
-	unordered_map<pair<ll,ll>,vector<pt>,CustomHash> grid;
+pair<int,int> closest_pair_of_points_rand_ints(vector<pt> P) {
+    int n = int(P.size());
+    assert(n >= 2);
+
+    // if there is a duplicated point, we have the solution
+    unordered_map<pt,int,CustomHashPoint> previous;
+    for (int i = 0; i < int(P.size()); ++i) {
+        auto it = previous.find(P[i]);
+        if (it != previous.end()) {
+            return {it->second, i};
+        }
+        previous[P[i]] = i;
+    }
+
+	unordered_map<pt,vector<int>,CustomHashPoint> grid;
 	grid.reserve(n);
 
 	mt19937 rd(chrono::system_clock::now().time_since_epoch().count());
 	uniform_int_distribution<int> dis(0, n-1);
 
 	ll d2 = dist2(P[0], P[1]);
-	pair<pt,pt> closest = {P[0], P[1]};
+	pair<int,int> closest = {0, 1};
 
-	auto candidate_closest = [&](const pt& a, const pt& b) -> void {
-		ll ab2 = dist2(a, b);
+	auto candidate_closest = [&](int i, int j) -> void {
+		ll ab2 = dist2(P[i], P[j]);
 		if (ab2 < d2) {
 			d2 = ab2;
-			closest = {a, b};
+			closest = {i, j};
 		}
 	};
 
@@ -84,13 +95,13 @@ pair<pt,pt> closest_pair_of_points_rand_ints(vector<pt> P) {
 		int j = dis(rd);
 		int k = dis(rd);
 		while (j == k) k = dis(rd);
-		candidate_closest(P[j], P[k]);
+		candidate_closest(j, k);
 	}
 
 	ll d = ll( sqrt(ld(d2)) + 1 );
 
-	for (const pt& p : P) {
-		grid[{p.x/d, p.y/d}].push_back(p);
+	for (int i = 0; i < n; ++i) {
+		grid[{P[i].x/d, P[i].y/d}].push_back(i);
 	}
 
 	// same block
@@ -109,14 +120,14 @@ pair<pt,pt> closest_pair_of_points_rand_ints(vector<pt> P) {
 		for (int dx = 0; dx <= 1; ++dx) {
 			for (int dy = -1; dy <= 1; ++dy) {
 				if (dx == 0 and dy == 0) continue;
-				pair<ll,ll> neighbour = {
-					coord.first  + dx, 
-					coord.second + dy
-				};
-				for (const pt& p : it.second) {
+				pt neighbour = pt(
+					coord.x  + dx, 
+					coord.y + dy
+                );
+				for (int i : it.second) {
 					if (not grid.count(neighbour)) continue;
-					for (const pt& q : grid.at(neighbour)) {
-						candidate_closest(p, q);
+					for (int j : grid.at(neighbour)) {
+						candidate_closest(i, j);
 					}
 				}
 			}
