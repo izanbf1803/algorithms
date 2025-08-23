@@ -12,6 +12,11 @@ struct Point {
 	}
 };
 
+template<typename T>
+bool operator==(const Point<T>& a, const Point<T>& b) {
+    return a.x == b.x and a.y == b.y;
+}
+
 
 using ll = long long;
 using ld = long double;
@@ -60,7 +65,7 @@ pair<pt,pt> closest_pair_of_points_naive(vector<pt> P) {
 
 
 // O(n)
-pair<int,int> closest_pair_of_points_rand_ints(vector<pt> P) {
+pair<pt,pt> closest_pair_of_points_rand_ints(vector<pt> P) {
     int n = int(P.size());
     assert(n >= 2);
 
@@ -69,7 +74,7 @@ pair<int,int> closest_pair_of_points_rand_ints(vector<pt> P) {
     for (int i = 0; i < int(P.size()); ++i) {
         auto it = previous.find(P[i]);
         if (it != previous.end()) {
-            return {it->second, i};
+            return {P[it->second], P[i]};
         }
         previous[P[i]] = i;
     }
@@ -134,7 +139,7 @@ pair<int,int> closest_pair_of_points_rand_ints(vector<pt> P) {
 		}
 	}
 
-	return closest;
+	return {P[closest.first], P[closest.second]};
 }
 
 
